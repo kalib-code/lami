@@ -49,135 +49,69 @@ export function ResourceViewer() {
     try {
       const html2pdf = (await import('html2pdf.js')).default;
 
-      // Clone and strip all Tailwind classes to avoid oklch color parsing errors
+      // Create an isolated iframe to avoid Tailwind's oklch colors
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'absolute';
+      iframe.style.left = '-9999px';
+      iframe.style.top = '-9999px';
+      iframe.style.width = '800px';
+      iframe.style.height = '600px';
+      document.body.appendChild(iframe);
+
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (!iframeDoc) throw new Error('Could not access iframe document');
+
+      // Write clean HTML with inline styles only (no oklch)
+      iframeDoc.open();
+      iframeDoc.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            * { box-sizing: border-box; }
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+              color: #1a1a1a;
+              background: #ffffff;
+              padding: 40px;
+              line-height: 1.6;
+              margin: 0;
+            }
+            h1 { font-size: 2em; font-weight: bold; margin: 0 0 0.5em 0; color: #000; }
+            h2 { font-size: 1.5em; font-weight: bold; margin: 1.5em 0 0.5em 0; color: #000; }
+            h3 { font-size: 1.25em; font-weight: bold; margin: 1.25em 0 0.5em 0; color: #000; }
+            h4 { font-size: 1.1em; font-weight: bold; margin: 1em 0 0.5em 0; color: #000; }
+            p { margin: 0.75em 0; }
+            a { color: #2563eb; text-decoration: underline; }
+            ul, ol { margin: 0.75em 0; padding-left: 1.5em; }
+            li { margin: 0.25em 0; }
+            table { width: 100%; border-collapse: collapse; margin: 1em 0; }
+            th { background: #f5f5f5; border: 1px solid #e5e5e5; padding: 8px; text-align: left; font-weight: bold; }
+            td { border: 1px solid #e5e5e5; padding: 8px; }
+            blockquote { border-left: 3px solid #e5e5e5; padding-left: 1em; margin: 1em 0; font-style: italic; color: #666; }
+            code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; font-size: 0.9em; font-family: monospace; }
+            pre { background: #f5f5f5; padding: 1em; border-radius: 4px; overflow: auto; }
+            pre code { background: none; padding: 0; }
+            hr { border: none; border-top: 1px solid #e5e5e5; margin: 2em 0; }
+            strong { font-weight: bold; }
+            em { font-style: italic; }
+          </style>
+        </head>
+        <body></body>
+        </html>
+      `);
+      iframeDoc.close();
+
+      // Clone content and strip all classes
       const clone = contentRef.current.cloneNode(true) as HTMLElement;
-
-      // Helper to strip classes and apply inline styles
-      const processElement = (el: Element) => {
-        const element = el as HTMLElement;
-        const tagName = element.tagName.toLowerCase();
-
-        // Remove all classes to prevent oklch computed styles
-        element.className = '';
-
-        // Apply base inline styles
-        element.style.color = '#1a1a1a';
-        element.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-
-        // Tag-specific styles
-        switch (tagName) {
-          case 'h1':
-            element.style.fontSize = '2em';
-            element.style.fontWeight = 'bold';
-            element.style.marginTop = '0';
-            element.style.marginBottom = '0.5em';
-            element.style.color = '#000000';
-            break;
-          case 'h2':
-            element.style.fontSize = '1.5em';
-            element.style.fontWeight = 'bold';
-            element.style.marginTop = '1.5em';
-            element.style.marginBottom = '0.5em';
-            element.style.color = '#000000';
-            break;
-          case 'h3':
-            element.style.fontSize = '1.25em';
-            element.style.fontWeight = 'bold';
-            element.style.marginTop = '1.25em';
-            element.style.marginBottom = '0.5em';
-            element.style.color = '#000000';
-            break;
-          case 'h4':
-            element.style.fontSize = '1.1em';
-            element.style.fontWeight = 'bold';
-            element.style.marginTop = '1em';
-            element.style.marginBottom = '0.5em';
-            element.style.color = '#000000';
-            break;
-          case 'p':
-            element.style.marginTop = '0.75em';
-            element.style.marginBottom = '0.75em';
-            element.style.lineHeight = '1.6';
-            break;
-          case 'a':
-            element.style.color = '#2563eb';
-            element.style.textDecoration = 'underline';
-            break;
-          case 'ul':
-          case 'ol':
-            element.style.marginTop = '0.75em';
-            element.style.marginBottom = '0.75em';
-            element.style.paddingLeft = '1.5em';
-            break;
-          case 'li':
-            element.style.marginTop = '0.25em';
-            element.style.marginBottom = '0.25em';
-            break;
-          case 'table':
-            element.style.width = '100%';
-            element.style.borderCollapse = 'collapse';
-            element.style.marginTop = '1em';
-            element.style.marginBottom = '1em';
-            break;
-          case 'th':
-            element.style.backgroundColor = '#f5f5f5';
-            element.style.border = '1px solid #e5e5e5';
-            element.style.padding = '8px';
-            element.style.textAlign = 'left';
-            element.style.fontWeight = 'bold';
-            break;
-          case 'td':
-            element.style.border = '1px solid #e5e5e5';
-            element.style.padding = '8px';
-            break;
-          case 'blockquote':
-            element.style.borderLeft = '3px solid #e5e5e5';
-            element.style.paddingLeft = '1em';
-            element.style.marginLeft = '0';
-            element.style.fontStyle = 'italic';
-            element.style.color = '#666666';
-            break;
-          case 'code':
-            element.style.backgroundColor = '#f5f5f5';
-            element.style.padding = '2px 4px';
-            element.style.borderRadius = '3px';
-            element.style.fontSize = '0.9em';
-            element.style.fontFamily = 'monospace';
-            break;
-          case 'pre':
-            element.style.backgroundColor = '#f5f5f5';
-            element.style.padding = '1em';
-            element.style.borderRadius = '4px';
-            element.style.overflow = 'auto';
-            break;
-          case 'hr':
-            element.style.border = 'none';
-            element.style.borderTop = '1px solid #e5e5e5';
-            element.style.marginTop = '2em';
-            element.style.marginBottom = '2em';
-            break;
-          case 'strong':
-            element.style.fontWeight = 'bold';
-            break;
-          case 'em':
-            element.style.fontStyle = 'italic';
-            break;
-        }
-
-        // Process children
-        Array.from(element.children).forEach(processElement);
+      const stripClasses = (el: Element) => {
+        (el as HTMLElement).className = '';
+        Array.from(el.children).forEach(stripClasses);
       };
+      stripClasses(clone);
 
-      // Apply container styles
-      clone.className = '';
-      clone.style.backgroundColor = '#ffffff';
-      clone.style.color = '#1a1a1a';
-      clone.style.padding = '20px';
-      clone.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-      clone.style.lineHeight = '1.6';
-
-      // Process all child elements
-      Array.from(clone.children).forEach(processElement);
+      // Append clone to iframe body
+      iframeDoc.body.appendChild(clone);
 
       const opt = {
         margin: [0.5, 0.5, 0.5, 0.5] as [number, number, number, number],
@@ -187,7 +121,10 @@ export function ResourceViewer() {
         jsPDF: { unit: 'in' as const, format: 'letter' as const, orientation: 'portrait' as const },
       };
 
-      await html2pdf().set(opt).from(clone).save();
+      await html2pdf().set(opt).from(iframeDoc.body).save();
+
+      // Cleanup
+      document.body.removeChild(iframe);
     } catch (error) {
       console.error('Error generating PDF:', error);
       alert('Failed to generate PDF. Please try again.');
