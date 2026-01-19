@@ -1,0 +1,10 @@
+export { TitleSlide } from './TitleSlide';
+export { SectionSlide } from './SectionSlide';
+export { BulletSlide } from './BulletSlide';
+export { QuoteSlide } from './QuoteSlide';
+export { ComparisonSlide } from './ComparisonSlide';
+export { TableSlide } from './TableSlide';
+export { InsightSlide } from './InsightSlide';
+export { GuidelinesSlide } from './GuidelinesSlide';
+export { ResourcesSlide } from './ResourcesSlide';
+export { QASlide } from './QASlide';
