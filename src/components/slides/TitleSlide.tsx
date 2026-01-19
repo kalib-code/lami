@@ -55,15 +55,15 @@ export function TitleSlide({ slide }: TitleSlideProps) {
 
       {/* Right side - QR Code */}
       <div className="hidden md:flex flex-col items-center justify-center pl-8 lg:pl-16">
-        <div className="bg-white p-4 rounded-xl shadow-lg">
+        <div className="bg-white p-6 rounded-2xl shadow-lg">
           <QRCodeSVG
             value={PRESENTATION_URL}
-            size={160}
+            size={220}
             level="M"
             includeMargin={false}
           />
         </div>
-        <p className="text-xs text-muted-foreground mt-3 text-center">
+        <p className="text-sm text-muted-foreground mt-4 text-center">
           Scan to follow along
         </p>
       </div>
